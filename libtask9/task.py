@@ -17,8 +17,8 @@ class Task(object):
             except:
                 exctype, excval, trace = sys.exc_info()
                 traceback.print_tb(trace)
+                traceback.print_exc()
                 del(trace)
-                print >>sys.stderr, '{}: {}'.format(exctype.__name__, excval)
             finally:
                 self._state = Task.FINISHED
                 self._proc = None
