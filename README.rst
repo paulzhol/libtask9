@@ -2,21 +2,32 @@ libtask9
 ========
 
 This is a fairly straightforward port of Russ Cox' libthread C library
-from Plan 9 from User Space (aka plan9port) to CPython. It depends on
+from Plan 9 from User Space (aka plan9port_) to CPython. It depends on
 the greenlet module.
 
-Procs are operating system threads created by the Python threading module.
-Tasks are user-space scheduled coroutines (libthread calls them threads, I've
-renamed them to tasks to avoid confusion with the Python threading module).
-Implemented using the greenlet module. They are cooperatively switched by their
-respective Proc and are bound only to that Proc's execution thread.
-Channels are a scheduling and synchronization mechanism, used to coordinate tasks
-in the same Proc or among different Procs.
+Procs
+  Operating system threads created by the Python threading module.
 
-libthread Documentation
------------------------
-.. thread(3): http://swtch.com/plan9port/man/man3/thread.html
-.. ioproc(3): http://swtch.com/plan9port/man/man3/ioproc.html
+Tasks
+  User-space scheduled coroutines (libthread calls them threads, I've
+  renamed them to tasks to avoid confusion with the Python threading module)
+  implemented using the greenlet module.
+
+  They are cooperatively switched by their respective Proc and are
+  bound only to that Proc's execution thread.
+
+Channels
+  A scheduling and synchronization mechanism, used to coordinate tasks
+  in the same Proc or among different Procs.
+
+plan9port_ libthread Documentation
+----------------------------------
+- thread_
+- ioproc_
+
+.. _plan9port: http://swtch.com/plan9port
+.. _thread: http://swtch.com/plan9port/man/man3/thread.html
+.. _ioproc: http://swtch.com/plan9port/man/man3/ioproc.html
 
 Examples
 --------
