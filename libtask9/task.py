@@ -54,6 +54,7 @@ class Proc(object):
         self._runq = deque()
         self._runq_empty = threading.Condition(self._lock)
         self._sched_ctx = None
+        self._timers = None
 
     def _init_sched_ctx(self):
         self._sched_ctx = greenlet.greenlet(self._schedule)
