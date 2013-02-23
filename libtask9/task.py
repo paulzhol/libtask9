@@ -25,7 +25,10 @@ class Task(object):
                 proc._remove_task(self)
 
         self._proc = proc
-        self._ctx = greenlet.greenlet(run=_wrap_task, parent=proc._sched_ctx)
+        if run is None:
+            self._ctx = greenlet.getcurrent()
+        else:
+            self._ctx = greenlet.greenlet(_wrap_task, proc._sched_ctx)
         self._state = Task.READY
         self._pending_alts = None
         self._triggered_alt = None
@@ -109,7 +112,8 @@ def _setcurproc(p):
 def curtask():
     return curproc()._task
 
-def new_proc(procname, run, *run_args, **run_kwargs):
+def new_proc(run, *run_args, **run_kwargs):
+    procname = run_kwargs.pop('procname', '')
     main_proc = run_kwargs.pop('main_proc', False)
     p = Proc(procname)
 

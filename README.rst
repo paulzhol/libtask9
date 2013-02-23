@@ -50,10 +50,10 @@ example1::
         chan = Channel(0)
     
         for i in range(10):
-            new_proc('emitter-{}'.format(i), emitter, chan, i)
+            new_proc(emitter, chan, i, procname='emitter-{}'.format(i))
     
         for j in range(5):
-            new_proc('receiver-{}'.format(j), receiver, chan, j)
+            new_proc(receiver, chan, j, procname='receiver-{}'.format(j))
     
         raw_input()
     

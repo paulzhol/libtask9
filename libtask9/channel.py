@@ -98,7 +98,7 @@ def alt(*alts, **kwargs):
         if len(readyops) > 0:
             ready = random.choice(readyops)
             ready.execute()
-            return alts.index(ready), ready
+            return alts.index(ready), ready._value
     
         if not canblock:
             return -1, None
@@ -111,7 +111,13 @@ def alt(*alts, **kwargs):
     curtask().switchtask()
     
     ready = curproc()._task._triggered_alt
-    return alts.index(ready), ready
+    return alts.index(ready), ready._value
+
+def AltSend(ch, value):
+    return AltOp(ch, AltOp.CHANSEND, value)
+
+def AltRecv(ch):
+    return AltOp(ch, AltOp.CHANRECV, None)
 
 class Channel(object):
     def __init__(self, nelem):
@@ -122,13 +128,19 @@ class Channel(object):
         self._asend = []
 
     def recv(self):
-        result, op = alt(AltOp(self, AltOp.CHANRECV, None), canblock=True)
-        assert(result == 0)
-        return op._value
+        idx, result = alt(AltRecv(self), canblock=True)
+        assert(idx == 0)
+        return result
 
     def send(self, value):
-        result, _ = alt(AltOp(self, AltOp.CHANSEND, value), canblock=True)
-        assert(result == 0)
+        idx, _ = alt(AltSend(self, value), canblock=True)
+        assert(idx == 0)
+
+    def nbrecv(self):
+        return alt(AltRecv(self), canblock=False)
+
+    def nbsend(self, value):
+        return alt(AltSend(self, value), canblock=False)
 
     def _getq(self, op):
         q = self._arecv

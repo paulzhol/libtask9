@@ -11,7 +11,7 @@ class IOProc(object):
         self._inuse = False
 
     def start(self):
-        new_proc(self._name, self._ioproc_loop, main_proc=False)
+        new_proc(self._ioproc_loop, procname=self._name, main_proc=False)
 
     def stop(self):
         if self._inuse:
