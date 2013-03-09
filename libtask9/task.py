@@ -3,6 +3,7 @@ import traceback
 from collections import deque
 import greenlet
 import threading
+import logging
 
 class Task(object):
     RUNNING = 0
@@ -54,7 +55,6 @@ class Proc(object):
         self._runq = deque()
         self._runq_empty = threading.Condition(self._lock)
         self._sched_ctx = None
-        self._timers = None
 
     def _init_sched_ctx(self):
         self._sched_ctx = greenlet.greenlet(self._schedule)
@@ -84,7 +84,7 @@ class Proc(object):
         while True:
             with self._lock:
                 if len(self._tasks) == 0:
-                    print 'proc {} done'.format(self._name)
+                    logging.debug('proc {} done'.format(self._name))
                     return
                 
                 while len(self._runq) == 0:
@@ -92,7 +92,7 @@ class Proc(object):
                 self._task = self._runq.popleft()
 
             self._task._state = Task.RUNNING
-            print 'proc {} switching to {}'.format(self._name, self._task)
+            logging.debug('proc {} switching to {}'.format(self._name, self._task))
             self._task._ctx.switch()
 
 _tls = threading.local()
