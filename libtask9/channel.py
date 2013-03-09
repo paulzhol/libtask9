@@ -113,10 +113,10 @@ def alt(*alts, **kwargs):
     ready = curproc()._task._triggered_alt
     return alts.index(ready), ready._value
 
-def AltSend(ch, value):
+def alt_send(ch, value):
     return AltOp(ch, AltOp.CHANSEND, value)
 
-def AltRecv(ch):
+def alt_recv(ch):
     return AltOp(ch, AltOp.CHANRECV, None)
 
 class Channel(object):
@@ -128,19 +128,19 @@ class Channel(object):
         self._asend = []
 
     def recv(self):
-        idx, result = alt(AltRecv(self), canblock=True)
+        idx, result = alt(alt_recv(self), canblock=True)
         assert(idx == 0)
         return result
 
     def send(self, value):
-        idx, _ = alt(AltSend(self, value), canblock=True)
+        idx, _ = alt(alt_send(self, value), canblock=True)
         assert(idx == 0)
 
     def nbrecv(self):
-        return alt(AltRecv(self), canblock=False)
+        return alt(alt_recv(self), canblock=False)
 
     def nbsend(self, value):
-        return alt(AltSend(self, value), canblock=False)
+        return alt(alt_send(self, value), canblock=False)
 
     def _getq(self, op):
         q = self._arecv

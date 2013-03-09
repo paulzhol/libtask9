@@ -29,52 +29,19 @@ plan9port_ libthread Documentation
 .. _thread: http://swtch.com/plan9port/man/man3/thread.html
 .. _ioproc: http://swtch.com/plan9port/man/man3/ioproc.html
 
-Examples
---------
-example1::
-
-    import sys
-    from libtask9 import *
-    
-    def emitter(chan, i):
-        while True:
-            print 'emitter{}: calling send'.format(i)
-            chan.send(i)
-    
-    def receiver(chan, j):
-        while True:
-            print 'receiver{}: recv: {}'.format(j, chan.recv())
-    
-    def taskmain(args):
-        print 'taskmain is running'
-        chan = Channel(0)
-    
-        for i in range(10):
-            new_proc(emitter, chan, i, procname='emitter-{}'.format(i))
-    
-        for j in range(5):
-            new_proc(receiver, chan, j, procname='receiver-{}'.format(j))
-    
-        raw_input()
-    
-    def main(args):
-        new_task(taskmain, args).switchtask()
-    
-    if __name__ == '__main__':
-        main(sys.argv)
-
-example2::
+Example
+-------
+::
 
     import sys
     import socket
-    import time
-    from libtask9 import *
+    from functools import partial
+    from libtask9 import new_task, curtask, IOProc, sleep, Channel, alt, alt_recv, after
     
     def ticker():
         while True:
-            time.sleep(2)
-            print 'tick'
-            curtask().yieldtask()
+            print 'tick from {}'.format(curtask())
+            sleep(2)
     
     class Acceptor(object):
         def __init__(self):
@@ -82,22 +49,56 @@ example2::
             self._s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self._s.bind(('0.0.0.0', 8080))
             self._s.listen(1)
+    
         def __call__(self):
-            return self._s.accept()
+            try:
+                return self._s.accept()
+            except socket.error:
+                return None, None
+    
+        def close_listener(self):
+            self._s.shutdown(socket.SHUT_RDWR)
+            self._s.close()
     
     def iotest(args):
         io = IOProc('io1')
         io.start()
         new_task(ticker)
-        print 'waiting for io'
-        client, addr = io.iocall(Acceptor())
-        print 'got: {}'.format(addr)
-        client.send('hello!\n')
-        client.close()
+    
+        def accept_task(acceptor, reply_chan):
+            client, addr = io.iocall(acceptor)
+            print 'got a connection from: {}'.format(addr)
+            reply_chan.send(client)
+    
+        print 'waiting 10 seconds for io to complete'
+        client_ch = Channel(1)
+        acceptor = Acceptor()
+        new_task(accept_task, acceptor, client_ch)
+    
+        idx, result = alt(
+            alt_recv(client_ch),
+            alt_recv(after(10)),
+            canblock=True
+        )
+    
+        if idx == 0:
+            client = result
+            io.iocall(partial(client.send, 'hello!\n'))
+            io.iocall(client.close)
+        elif idx == 1:
+            print 'timeout, forcing close on listener'
+            acceptor.close_listener()
+            # allow the iocall a chance to complete before we call io.stop()
+            client_ch.recv()
+    
         io.stop()
     
     def main(args):
-        new_task(iotest, args).switchtask()
+        new_task(None).switchtask()
+        iotest(args)
+        print 'exiting'
+        raise SystemExit(0)
     
     if __name__ == '__main__':
+        import logging; logging.basicConfig(); logging.getLogger().setLevel('DEBUG')
         main(sys.argv)

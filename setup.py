@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name = "libtask9",
-    version = 0.1,
+    version = 0.2,
     description = 'Python port of the Plan 9 from User Space (aka plan9port) version of libthread',
     author = 'Yuval Pavel Zholkover',
     author_email = 'paulzhol@gmail.com',

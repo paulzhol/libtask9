@@ -3,7 +3,7 @@ import sys
 import math
 import logging
 from .task import new_proc, new_task
-from .channel import Channel, alt, AltRecv
+from .channel import Channel, alt, alt_recv
 
 class _Event(object):
     def __init__(self, timeout, reply_chan):
@@ -39,8 +39,8 @@ class _Timers(object):
     def timers_maintask(self):
         while True:
             idx, result = alt(
-                AltRecv(self.tick),
-                AltRecv(self.requests),
+                alt_recv(self.tick),
+                alt_recv(self.requests),
                 canblock = True
             )
 

@@ -5,6 +5,16 @@ import greenlet
 import threading
 import logging
 
+taskid = 0
+taskid_lock = threading.Lock()
+
+def _next_taskid():
+    global taskid, taskid_lock
+    with taskid_lock:
+       tid = taskid
+       taskid += 1
+    return tid
+
 class Task(object):
     RUNNING = 0
     READY   = 1
@@ -30,9 +40,18 @@ class Task(object):
             self._ctx = greenlet.getcurrent()
         else:
             self._ctx = greenlet.greenlet(_wrap_task, proc._sched_ctx)
+
+        self._tid = _next_taskid()
         self._state = Task.READY
         self._pending_alts = None
         self._triggered_alt = None
+
+    def __repr__(self):
+        return 'Task<{}>'.format(self._tid)
+
+    @property
+    def tid(self):
+        return self._tid
 
     def yieldtask(self):
         self.readytask()
