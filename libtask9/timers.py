@@ -1,6 +1,7 @@
-import select
 import sys
 import math
+import errno
+import select
 import logging
 from .task import new_proc, new_task
 from .channel import Channel, alt, alt_recv
@@ -33,8 +34,13 @@ class _Timers(object):
 
     def ticker_proc(self):
         while True:
-            select.select([], [], [], 1.0)
-            self.tick.send(True)
+            try:
+                select.select([], [], [], 1.0)
+                self.tick.send(True)
+            except select.error as e:
+                if e.errno == errno.EINTR:
+                    continue
+                raise
 
     def timers_maintask(self):
         while True:
