@@ -3,6 +3,7 @@ import traceback
 from collections import deque
 import greenlet
 import threading
+import weakref
 import logging
 
 taskid = 0
@@ -123,11 +124,11 @@ def curproc():
         p = Proc('mainproc')
         _setcurproc(p)
         p._init_sched_ctx()
-        return p
+        return _tls.curproc
 
 def _setcurproc(p):
     global _tls
-    _tls.curproc = p
+    _tls.curproc = weakref.proxy(p)
 
 def curtask():
     return curproc()._task
