@@ -33,8 +33,8 @@ class Task(object):
                 del(trace)
             finally:
                 self._state = Task.FINISHED
+                self._proc._remove_task(self)
                 self._proc = None
-                proc._remove_task(self)
 
         self._proc = proc
         if run is None:
@@ -119,19 +119,22 @@ _tls = threading.local()
 def curproc():
     global _tls
     try:
-        return _tls.curproc
+        return _tls.curproc()
     except AttributeError:
         p = Proc('mainproc')
         _setcurproc(p)
         p._init_sched_ctx()
-        return _tls.curproc
+        return _tls.curproc()
 
 def _setcurproc(p):
     global _tls
-    _tls.curproc = weakref.proxy(p)
+    _tls.curproc = weakref.ref(p)
 
 def curtask():
-    return curproc()._task
+    p = curproc()
+    if p is not None:
+        return p._task
+    return None
 
 def new_proc(run, *run_args, **run_kwargs):
     procname = run_kwargs.pop('procname', '')
@@ -151,6 +154,7 @@ def new_proc(run, *run_args, **run_kwargs):
     return p
 
 def new_task(run, *run_args, **run_kwargs):
-    t = Task(curproc(), run, *run_args, **run_kwargs)
-    curproc()._add_task(t)
+    p = curproc()
+    t = Task(p, run, *run_args, **run_kwargs)
+    p._add_task(t)
     return t
