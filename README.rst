@@ -36,7 +36,7 @@ Example
     import sys
     import socket
     from functools import partial
-    from libtask9 import new_task, curtask, IOProc, sleep, Channel, alt, alt_recv, after
+    from libtask9 import new_task, init_timers, curtask, IOProc, sleep, Channel, alt, alt_recv, after
     
     def ticker():
         while True:
@@ -95,6 +95,7 @@ Example
     
     def main(args):
         new_task(None).switchtask()
+        init_timers()
         iotest(args)
         print 'exiting'
         raise SystemExit(0)

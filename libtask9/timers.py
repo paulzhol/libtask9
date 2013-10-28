@@ -76,11 +76,19 @@ class _Timers(object):
 
         logging.debug('events: {}'.format(self.events))
 
-_timers = _Timers()
-_timers.start()
+_timers = None
+
+def init_timers():
+    global _timers
+    if _timers is not None:
+        raise RuntimeError('libtask9 timers are already initialized')
+    _timers = _Timers()
+    _timers.start()
 
 def after(timeout):
     global _timers
+    if _timers is None:
+        raise RuntimeError('libtask9 timers were not initialized')
     return _timers.register_timer(timeout)
 
 def sleep(timeout):
