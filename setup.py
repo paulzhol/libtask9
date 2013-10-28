@@ -3,12 +3,12 @@
 from setuptools import setup, find_packages
 
 setup(
-    name = "libtask9",
-    version = 0.2.1,
+    name = 'libtask9',
+    version = '0.2.2',
     description = 'Python port of the Plan 9 from User Space (aka plan9port) version of libthread',
     author = 'Yuval Pavel Zholkover',
     author_email = 'paulzhol@gmail.com',
-    url = 'https://bitbucket.org/paulzhol/libtask9',
+    url = 'https://github.com/paulzhol/libtask9',
     classifiers = [
         'Development Status :: 3 - Alpha',
         'Topic :: Software Development :: Libraries :: Python Modules',
