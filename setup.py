@@ -1,6 +1,21 @@
 #!/usr/bin/env python
 
-from setuptools import setup, find_packages
+import sys
+from setuptools import setup, find_packages, Extension
+
+timers_module_sources = []
+timers_module_libraries = ['pthread']
+
+if sys.platform.startswith('linux') or \
+    (sys.platform.startswith('freebsd') and (sys.platform[7] > '7')):
+    timers_module_sources.append('libtask9/timers_ext/posix_rt.c')
+    timers_module_libraries.append('rt')
+else:
+    timers_module_sources.append('libtask9/timers_ext/pthreads.c')
+
+timers_module = Extension('_libtask9_timers',
+                          sources = timers_module_sources,
+                          libraries = timers_module_libraries)
 
 setup(
     name = 'libtask9',
@@ -16,6 +31,7 @@ setup(
         'License :: OSI Approved :: MIT License',
     ],
     packages = find_packages(),
+    ext_modules = [timers_module],
     install_requires = [
         'greenlet >= 0.4.0',
     ]

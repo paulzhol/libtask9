@@ -36,12 +36,13 @@ Example
     import sys
     import socket
     from functools import partial
-    from libtask9 import new_task, init_timers, curtask, IOProc, sleep, Channel, alt, alt_recv, after
+    from libtask9 import new_task, init_timers, curtask, IOProc, Channel, alt, alt_recv
+    from libtask9 import sleep, after, Second
     
     def ticker():
         while True:
             print 'tick from {}'.format(curtask())
-            sleep(2)
+            sleep(2*Second)
     
     class Acceptor(object):
         def __init__(self):
@@ -77,7 +78,7 @@ Example
     
         idx, result = alt(
             alt_recv(client_ch),
-            alt_recv(after(10)),
+            alt_recv(after(10*Second)),
             canblock=True
         )
     

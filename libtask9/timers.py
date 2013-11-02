@@ -1,80 +1,57 @@
 import sys
-import math
-import errno
-import select
 import logging
+from collections import namedtuple
+from threading import Lock
 from .task import new_proc, new_task
 from .channel import Channel, alt, alt_recv
+import _libtask9_timers
 
-class _Event(object):
-    def __init__(self, timeout, reply_chan):
-        self.timeout = timeout
-        self.reply_chan = reply_chan
+Millisecond = 1
+Second      = 1000 * Millisecond
+Minute      = 60 * Second
+Hour        = 60 * Minute
 
-    def __repr__(self):
-        return '_Event<timeout: {}>'.format(self.timeout)
+_Event = namedtuple('_Event', ('expire_at', 'chan'))
 
 class _Timers(object):
+    TIMER_WHEEL_LEN = 257
+    TIMER_PERIOD = 100 # miliseconds
+
     def __init__(self):
-        self.events = []
-        self.events_guard = _Event(sys.maxint, Channel(0))
-        self.events.append(self.events_guard)
-        self.tick = Channel(16)
-        self.requests = Channel(0)
+        self.ticker = None
+        self.now = 0
+        self.idx = 0
+        self.timer_wheel = tuple(list() for i in xrange(_Timers.TIMER_WHEEL_LEN))
+        self.lock = Lock()
 
     def start(self):
+        self.ticker = _libtask9_timers.start_ticker(_Timers.TIMER_PERIOD)
         new_proc(self.ticker_proc, procname='ticker_proc', main_proc=False)
-        new_task(self.timers_maintask)
 
     def register_timer(self, timeout):
-        timeout = math.ceil(timeout)
-        ch = Channel(1)
-        self.requests.send(_Event(timeout, ch))
-        return ch
+        chan = Channel(1)
+        with self.lock:
+            h = timeout / _Timers.TIMER_PERIOD
+            h = (self.idx+h) % _Timers.TIMER_WHEEL_LEN
+            self.timer_wheel[h].append(_Event(self.now+timeout, chan))
+        return chan
+
+    def process_events(self):
+        event_list = self.timer_wheel[self.idx]
+        for evt in event_list[:]:
+            if self.now >= evt.expire_at:
+                evt.chan.nbsend(None)
+                event_list.remove(evt)
+
 
     def ticker_proc(self):
         while True:
-            try:
-                select.select([], [], [], 1.0)
-                self.tick.send(True)
-            except select.error as e:
-                if e.errno == errno.EINTR:
-                    continue
-                raise
-
-    def timers_maintask(self):
-        while True:
-            idx, result = alt(
-                alt_recv(self.tick),
-                alt_recv(self.requests),
-                canblock = True
-            )
-
-            if idx == 0:
-                logging.debug('tick, events: {}'.format(self.events))
-                while self.events[0] != self.events_guard:
-                    self.events[0].timeout -= 1
-                    if self.events[0].timeout <= 0:
-                        event = self.events.pop(0)
-                        event.reply_chan.send(True)
-                    else:
-                        break
-
-            elif idx == 1:
-                self._add_event(result)
-
-    def _add_event(self, new_evt):
-        logging.debug('request for {}'.format(new_evt.timeout))
-        for idx, evt in enumerate(self.events):
-            if new_evt.timeout <= evt.timeout:
-                break
-            new_evt.timeout -= evt.timeout
-
-        self.events.insert(idx, new_evt)
-        if evt != self.events_guard:
-            evt.timeout -= new_evt.timeout
-
-        logging.debug('events: {}'.format(self.events))
+            ticks = _libtask9_timers.wait_tick(self.ticker)
+            for i in xrange(ticks):
+                with self.lock:
+                    self.now += _Timers.TIMER_PERIOD
+                    self.idx = (self.idx+1) % _Timers.TIMER_WHEEL_LEN
+                    self.process_events()
 
 _timers = None
 
