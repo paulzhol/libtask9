@@ -19,7 +19,7 @@ timers_module = Extension('_libtask9_timers',
 
 setup(
     name = 'libtask9',
-    version = '0.2.2',
+    version = '0.3.0',
     description = 'Python port of the Plan 9 from User Space (aka plan9port) version of libthread',
     author = 'Yuval Pavel Zholkover',
     author_email = 'paulzhol@gmail.com',
