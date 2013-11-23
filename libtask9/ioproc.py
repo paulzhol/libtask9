@@ -1,9 +1,10 @@
 import sys
-import traceback
 from .channel import Channel
 from .task import new_proc
 
 class IOProc(object):
+    NO_EXC = (None, None, None)
+
     def __init__(self, name):
         self._name = 'ioproc-{}'.format(name)
         self._c = Channel(0)
@@ -29,8 +30,9 @@ class IOProc(object):
         ret = self._creply.recv()
         self._inuse = False
         self._creply.send(None)
-        if ret['exc'] is not None:
-            raise ret['exc']
+        if ret['exc'] != IOProc.NO_EXC:
+            exc_info = ret['exc']
+            raise exc_info[0], exc_info[1], exc_info[2]
         return ret['result']
 
     def _ioproc_loop(self):
@@ -46,15 +48,11 @@ class IOProc(object):
             if io is None:
                 return
 
+            ret = dict(result=None, exc=IOProc.NO_EXC)
             try:
-                ret = dict(result=None, exc=None)
                 ret['result'] = io()
             except:
-                exctype, excval, trace = sys.exc_info()
-                ret['exc'] = excval
-                traceback.print_tb(trace)
-                traceback.print_exc()
-                del(trace)
+                ret['exc'] = sys.exc_info()
             finally:
                 self._creply.send(ret)
 

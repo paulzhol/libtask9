@@ -27,10 +27,7 @@ class Task(object):
             try:
                 run(*run_args, **run_kwargs)
             except:
-                exctype, excval, trace = sys.exc_info()
-                traceback.print_tb(trace)
                 traceback.print_exc()
-                del(trace)
             finally:
                 self._state = Task.FINISHED
                 self._proc._remove_task(self)
